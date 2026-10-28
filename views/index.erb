@@ -1,51 +1,20 @@
-
 <!doctype html>
-<html lang="pl">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b101b">
-  <meta name="description" content="Interaktywny panel notowań akcji z wykresem i wyszukiwaniem spółek.">
-  <title>Analiza rynku — Notowania akcji</title>
-
+  <meta name="description" content="Interactive stock market dashboard with company search and price charts.">
+  <title>Market Analysis — Stock Prices</title>
   <link rel="stylesheet" href="/styles.css">
-
   <style>
-    .topbar {
-      min-height: 62px;
-    }
-
-    .site-title {
-      font-size: 17px;
-      font-weight: 650;
-      letter-spacing: -.2px;
-    }
-
-    .main-content {
-      padding-top: 30px;
-    }
-
-    .intro {
-      display: block;
-      margin-top: 0;
-    }
-
-    .intro h1 {
-      font-size: clamp(28px, 3vw, 36px);
-      letter-spacing: -.8px;
-      line-height: 1.2;
-      font-weight: 700;
-    }
-
-    .subtitle {
-      margin-top: 8px;
-      line-height: 1.55;
-    }
-
-    .search-section {
-      margin-top: 24px;
-    }
-
+    .topbar { min-height: 62px; }
+    .site-title { font-size: 17px; font-weight: 650; letter-spacing: -.2px; }
+    .main-content { padding-top: 30px; }
+    .intro { display: block; margin-top: 0; }
+    .intro h1 { font-size: clamp(28px, 3vw, 36px); letter-spacing: -.8px; line-height: 1.2; font-weight: 700; }
+    .subtitle { margin-top: 8px; line-height: 1.55; }
+    .search-section { margin-top: 24px; }
     @media (max-width: 580px) {
       .topbar { min-height: 58px; }
       .site-title { font-size: 16px; }
@@ -54,57 +23,30 @@
       .search-section { margin-top: 22px; }
     }
   </style>
-
   <script defer src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
   <script defer src="/app.js"></script>
 </head>
-
 <body>
   <div class="app-shell">
-
     <header class="topbar">
-      <a class="site-title" href="/">Analiza rynku</a>
+      <a class="site-title" href="/">Market Analysis</a>
       <span class="topbar-date" id="today-label"></span>
     </header>
 
     <main class="main-content">
-
       <div class="intro">
-        <h1>Notowania akcji</h1>
-        <p class="subtitle">
-          Wyszukaj spółkę, wybierz okres i przeanalizuj zmiany cen.
-        </p>
+        <h1>Stock Prices</h1>
+        <p class="subtitle">Search for a stock, select a time range, and explore price movements.</p>
       </div>
 
-      <section class="search-section" aria-label="Wyszukiwanie spółek">
-
+      <section class="search-section" aria-label="Stock search">
         <div class="search-box" id="search-box">
-          <svg class="search-icon" width="20" height="20"
-               viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"/>
-            <path d="m20 20-4-4"/>
-          </svg>
-
-          <input
-            id="stock-search"
-            aria-label="Wyszukaj spółkę"
-            aria-autocomplete="list"
-            aria-controls="suggestions"
-            autocomplete="off"
-            spellcheck="false"
-            type="search"
-            placeholder="Znajdź spółkę lub ticker, np. Apple, NVDA, PKO.WA…"
-          >
-
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input id="stock-search" aria-label="Search for a stock" aria-autocomplete="list" aria-controls="suggestions" autocomplete="off" spellcheck="false" type="search" placeholder="Search for a company or ticker, e.g. Apple, NVDA, PKO.WA…">
           <span class="search-hint">⌘ K</span>
-
-          <div class="suggestions" id="suggestions"
-               role="listbox" hidden></div>
+          <div class="suggestions" id="suggestions" role="listbox" hidden></div>
         </div>
-
-        <div class="quick-label">POPULARNE</div>
-
+        <div class="quick-label">POPULAR STOCKS</div>
         <div class="quick-picks" id="quick-picks">
           <button class="quick" data-symbol="AAPL">AAPL</button>
           <button class="quick" data-symbol="NVDA">NVDA</button>
@@ -112,145 +54,57 @@
           <button class="quick" data-symbol="TSLA">TSLA</button>
           <button class="quick" data-symbol="CDR.WA">CDR.WA</button>
         </div>
-
       </section>
 
-      <section class="dashboard-card" aria-label="Wykres giełdowy">
-
+      <section class="dashboard-card" aria-label="Stock price chart">
         <div class="card-head">
-
           <div class="asset-identity">
             <div class="asset-avatar" id="asset-icon">A</div>
-
-            <div>
-              <div class="asset-title">
-                <h2 id="stock-name">Apple Inc.</h2>
-                <span class="asset-symbol" id="stock-symbol">AAPL</span>
-              </div>
-
-              <div class="asset-subline" id="stock-description">
-                Odczytywanie notowań...
-              </div>
+            <div><div class="asset-title"><h2 id="stock-name">Apple Inc.</h2><span class="asset-symbol" id="stock-symbol">AAPL</span></div>
+              <div class="asset-subline" id="stock-description">Loading stock data...</div>
             </div>
           </div>
-
-          <button
-            class="refresh"
-            id="refresh-btn"
-            type="button"
-            title="Odśwież dane"
-            aria-label="Odśwież dane"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round"
-                 aria-hidden="true">
-              <path d="M20 11a8 8 0 0 0-14.7-4.3L3 9"/>
-              <path d="M3 4v5h5"/>
-              <path d="M4 13a8 8 0 0 0 14.7 4.3L21 15"/>
-              <path d="M21 20v-5h-5"/>
-            </svg>
-            <span>Odśwież</span>
+          <button class="refresh" id="refresh-btn" type="button" title="Refresh data" aria-label="Refresh data">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.7-4.3L3 9"/><path d="M3 4v5h5"/><path d="M4 13a8 8 0 0 0 14.7 4.3L21 15"/><path d="M21 20v-5h-5"/></svg>
+            <span>Refresh</span>
           </button>
-
         </div>
-
         <div class="price-area">
-          <div class="price-main">
-            <span id="current-price">—</span>
-            <span id="currency-label">USD</span>
-          </div>
-
-          <div class="change neutral" id="price-change">
-            Wczytywanie...
-          </div>
-
-          <div class="price-range-label">
-            Zmiana w wybranym okresie
-          </div>
+          <div class="price-main"><span id="current-price">—</span><span id="currency-label">USD</span></div>
+          <div class="change neutral" id="price-change">Loading...</div>
+          <div class="price-range-label">Change over selected period</div>
         </div>
-
         <div class="tools-row">
-
-          <div class="range-group" role="group" aria-label="Zakres wykresu">
-            <button class="range-btn active"
-                    data-range="1d" aria-pressed="true">1D</button>
-            <button class="range-btn"
-                    data-range="5d" aria-pressed="false">5D</button>
-            <button class="range-btn"
-                    data-range="1w" aria-pressed="false">1W</button>
-            <button class="range-btn"
-                    data-range="1m" aria-pressed="false">1M</button>
-            <button class="range-btn"
-                    data-range="1y" aria-pressed="false">1Y</button>
+          <div class="range-group" role="group" aria-label="Chart time range">
+            <button class="range-btn active" data-range="1d" aria-pressed="true">1D</button>
+            <button class="range-btn" data-range="5d" aria-pressed="false">5D</button>
+            <button class="range-btn" data-range="1w" aria-pressed="false">1W</button>
+            <button class="range-btn" data-range="1m" aria-pressed="false">1M</button>
+            <button class="range-btn" data-range="1y" aria-pressed="false">1Y</button>
           </div>
-
-          <div class="chart-type" role="group" aria-label="Typ wykresu">
-            <button class="type-btn active"
-                    data-chart="line" aria-pressed="true">Linia</button>
-            <button class="type-btn"
-                    data-chart="candle" aria-pressed="false">Świece</button>
+          <div class="chart-type" role="group" aria-label="Chart type">
+            <button class="type-btn active" data-chart="line" aria-pressed="true">Line</button>
+            <button class="type-btn" data-chart="candle" aria-pressed="false">Candlesticks</button>
           </div>
-
         </div>
-
         <div class="chart-wrap" id="chart-wrap">
-          <div id="chart" aria-label="Interaktywny wykres cen"></div>
-          <div class="chart-state" id="chart-state" role="status">
-            Pobieranie danych giełdowych…
-          </div>
+          <div id="chart" aria-label="Interactive price chart"></div>
+          <div class="chart-state" id="chart-state" role="status">Loading market data…</div>
         </div>
-
         <div class="chart-footer">
-          <span>
-            <span class="legend-dot"></span> Cena akcji
-            <span class="legend-volume"></span> Wolumen
-          </span>
-          <span id="hover-value">
-            Najedź na wykres, aby zobaczyć szczegóły
-          </span>
+          <span><span class="legend-dot"></span> Stock price <span class="legend-volume"></span> Volume</span>
+          <span id="hover-value">Hover over the chart for details</span>
         </div>
-
       </section>
 
-      <section class="stats-grid" aria-label="Statystyki okresu">
-
-        <div class="stat-card">
-          <span class="stat-label">NAJWYŻSZA CENA W OKRESIE</span>
-          <strong id="period-high">—</strong>
-          <span class="stat-foot">High</span>
-        </div>
-
-        <div class="stat-card">
-          <span class="stat-label">NAJNIŻSZA CENA W OKRESIE</span>
-          <strong id="period-low">—</strong>
-          <span class="stat-foot">Low</span>
-        </div>
-
-        <div class="stat-card">
-          <span class="stat-label">ŁĄCZNY WOLUMEN W OKRESIE</span>
-          <strong id="period-volume">—</strong>
-          <span class="stat-foot">Liczba akcji</span>
-        </div>
-
-        <div class="stat-card">
-          <span class="stat-label">PUNKTÓW DANYCH</span>
-          <strong id="period-bars">—</strong>
-          <span class="stat-foot" id="provider">Źródło: —</span>
-        </div>
-
+      <section class="stats-grid" aria-label="Period statistics">
+        <div class="stat-card"><span class="stat-label">HIGHEST PRICE</span><strong id="period-high">—</strong><span class="stat-foot">High</span></div>
+        <div class="stat-card"><span class="stat-label">LOWEST PRICE</span><strong id="period-low">—</strong><span class="stat-foot">Low</span></div>
+        <div class="stat-card"><span class="stat-label">TOTAL VOLUME</span><strong id="period-volume">—</strong><span class="stat-foot">Shares traded</span></div>
+        <div class="stat-card"><span class="stat-label">DATA POINTS</span><strong id="period-bars">—</strong><span class="stat-foot" id="provider">Source: —</span></div>
       </section>
-
     </main>
-
-    <footer class="footer">
-      <span>© <span id="year"></span> Analiza rynku</span>
-      <a href="https://www.tradingview.com/"
-         target="_blank" rel="noopener noreferrer">
-        Wykresy: TradingView Lightweight Charts™
-      </a>
-    </footer>
-
+    <footer class="footer"><span>© <span id="year"></span> Market Analysis</span><a href="https://www.tradingview.com/" target="_blank" rel="noopener noreferrer">Charts: TradingView Lightweight Charts™</a></footer>
   </div>
 </body>
 </html>

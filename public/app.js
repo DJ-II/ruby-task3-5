@@ -6,15 +6,15 @@ let chart, lineSeries, candleSeries, volumeSeries, suggestions = [], chosen = -1
 let searchController = null, searchTimer = null;
 
 function formatNumber(value, digits = 2) {
-  return new Intl.NumberFormat('pl-PL', {
+  return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(value);
 }
 function formatVolume(value) {
-  if (value >= 1e9) return `${formatNumber(value / 1e9, 2)} mld`;
-  if (value >= 1e6) return `${formatNumber(value / 1e6, 2)} mln`;
-  if (value >= 1e3) return `${formatNumber(value / 1e3, 1)} tys.`;
+  if (value >= 1e9) return `${formatNumber(value / 1e9, 2)}B`;
+  if (value >= 1e6) return `${formatNumber(value / 1e6, 2)}M`;
+  if (value >= 1e3) return `${formatNumber(value / 1e3, 1)}K`;
   return formatNumber(value, 0);
 }
 function showChartMessage(message) {
@@ -25,7 +25,7 @@ function hideChartMessage() { $('chart-state').hidden = true; }
 
 function initChart() {
   if (!window.LightweightCharts) {
-    showChartMessage('Biblioteka wykresów nie została załadowana. Sprawdź połączenie z Internetem.');
+    showChartMessage('Chart library could not be loaded. Check your internet connection.');
     return false;
   }
   const L = LightweightCharts;
@@ -37,7 +37,7 @@ function initChart() {
     crosshair: { mode: L.CrosshairMode.Normal },
     handleScroll: true,
     handleScale: true,
-    localization: { locale: 'pl-PL' },
+    localization: { locale: 'en-US' },
     autoSize: true,
     attributionLogo: true,
   });
@@ -56,7 +56,7 @@ function initChart() {
   volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
   chart.subscribeCrosshairMove((param) => {
     if (!param?.time) {
-      $('hover-value').textContent = 'Najedź na wykres, aby zobaczyć szczegóły';
+      $('hover-value').textContent = 'Hover over the chart for details';
       return;
     }
     const point = param.seriesData.get(state.mode === 'candle' ? candleSeries : lineSeries);
@@ -64,7 +64,7 @@ function initChart() {
     const price = point.close ?? point.value;
     const day = typeof param.time === 'string'
       ? param.time
-      : new Date(param.time * 1000).toLocaleString('pl-PL', { timeZone: 'UTC', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' UTC';
+      : new Date(param.time * 1000).toLocaleString('en-US', { timeZone: 'UTC', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' UTC';
     $('hover-value').textContent = `${day}  ·  ${formatNumber(price, 2)} ${state.data?.currency || ''}`;
   });
   return true;
@@ -80,7 +80,7 @@ async function getJSON(url, signal) {
 async function loadStock(symbol = state.symbol, force = false) {
   state.symbol = symbol.toUpperCase();
   const request = ++state.request;
-  showChartMessage(`Pobieranie notowań ${state.symbol}…`);
+  showChartMessage(`Loading quotes for ${state.symbol}…`);
   $('refresh-btn').disabled = true;
   try {
     const url = `/api/history?symbol=${encodeURIComponent(state.symbol)}&range=${encodeURIComponent(state.range)}${force ? `&refresh=${Date.now()}` : ''}`;
@@ -91,8 +91,8 @@ async function loadStock(symbol = state.symbol, force = false) {
     hideChartMessage();
   } catch (error) {
     if (request !== state.request) return;
-    showChartMessage(`Nie udało się pobrać notowań: ${error.message}. Wybierz inną spółkę lub spróbuj później.`);
-    $('stock-description').textContent = 'Brak dostępnych notowań';
+    showChartMessage(`Failed to load market data: ${error.message}. Select another stock or try again later.`);
+    $('stock-description').textContent = 'No market data available';
   } finally {
     if (request === state.request) $('refresh-btn').disabled = false;
   }
@@ -103,7 +103,7 @@ function renderStock() {
   $('stock-name').textContent = data.name || data.symbol;
   $('stock-symbol').textContent = data.symbol;
   $('asset-icon').textContent = data.symbol[0] || '?';
-  $('stock-description').textContent = `${data.provider} · ${data.bars.length} obserwacji · ostatni punkt: ${formatBarTime(data.last_bar_time)}`;
+  $('stock-description').textContent = `${data.provider} · ${data.bars.length} data points · latest: ${formatBarTime(data.last_bar_time)}`;
   $('current-price').textContent = formatNumber(data.price, data.price < 1 ? 4 : 2);
   $('currency-label').textContent = data.currency || '';
   const sign = data.change > 0 ? '+' : '';
@@ -115,7 +115,7 @@ function renderStock() {
   $('period-low').textContent = `${formatNumber(Math.min(...pricesLow))} ${data.currency}`;
   $('period-volume').textContent = formatVolume(data.bars.reduce((sum, item) => sum + item.volume, 0));
   $('period-bars').textContent = formatNumber(data.bars.length, 0);
-  $('provider').textContent = `Źródło: ${data.provider}`;
+  $('provider').textContent = `Source: ${data.provider}`;
   $('stock-search').value = '';
   hideSuggestions();
   if (!chart && !initChart()) return;
@@ -132,7 +132,7 @@ function renderStock() {
 }
 function formatBarTime(barTime) {
   if (typeof barTime === 'string') return barTime;
-  return new Date(barTime * 1000).toLocaleString('pl-PL', {
+  return new Date(barTime * 1000).toLocaleString('en-US', {
     timeZone: 'UTC', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
   }) + ' UTC';
 }
@@ -161,6 +161,7 @@ function renderSuggestions(items) {
     button.className = 'suggestion';
     button.setAttribute('role', 'option');
     button.id = `suggestion-${index}`;
+
     const symbol = document.createElement('span'); symbol.className = 'sugg-symbol'; symbol.textContent = item.symbol;
     const name = document.createElement('span'); name.className = 'sugg-name'; name.textContent = item.name;
     const exch = document.createElement('span'); exch.className = 'sugg-exchange'; exch.textContent = item.exchange || '';
@@ -188,12 +189,12 @@ function searchInput() {
       if (controller.signal.aborted || q !== $('stock-search').value.trim()) return;
       const results = data.results || [];
       if (isTicker(q) && !results.some((v) => v.symbol.toUpperCase() === q.toUpperCase())) {
-        results.unshift({ symbol: q.toUpperCase(), name: 'Sprawdź symbol', exchange: '' });
+        results.unshift({ symbol: q.toUpperCase(), name: 'Search ticker symbol', exchange: '' });
       }
       renderSuggestions(results.slice(0, 10));
     } catch (error) {
       if (error.name === 'AbortError') return;
-      if (isTicker(q)) renderSuggestions([{ symbol: q.toUpperCase(), name: 'Sprawdź symbol', exchange: '' }]);
+      if (isTicker(q)) renderSuggestions([{ symbol: q.toUpperCase(), name: 'Search ticker symbol', exchange: '' }]);
       else hideSuggestions();
     }
   }, 260);
@@ -201,7 +202,7 @@ function searchInput() {
 
 function boot() {
   $('year').textContent = String(new Date().getFullYear());
-  $('today-label').textContent = new Date().toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
+  $('today-label').textContent = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
   document.querySelectorAll('[data-range]').forEach((btn) => btn.addEventListener('click', () => {
     state.range = btn.dataset.range;
     updateButtons('[data-range]', 'range', state.range);
@@ -242,7 +243,7 @@ function boot() {
   });
   if (!initChart()) return;
   loadStock('AAPL');
-  // A small delay in quote updates is acceptable for this educational dashboard.
+
   setInterval(() => { if (!document.hidden) loadStock(); }, 120_000);
 }
 

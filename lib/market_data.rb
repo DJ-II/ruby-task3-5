@@ -4,7 +4,6 @@ require 'uri'
 require 'time'
 require 'thread'
 
-
 class MarketData
   class UpstreamError < StandardError; end
   class InvalidParameter < StandardError; end
@@ -17,7 +16,6 @@ class MarketData
     '1y' => { yahoo_range: '1y', yahoo_interval: '1d', twelve_interval: '1day', twelve_size: 290 }
   }.freeze
 
-  # Used as quick picks and as a graceful fallback when autocomplete is unavailable.
   POPULAR = [
     ['AAPL', 'Apple Inc.', 'NASDAQ'],
     ['MSFT', 'Microsoft Corporation', 'NASDAQ'],
@@ -53,7 +51,7 @@ class MarketData
 
   def search(query)
     query = query.to_s.strip[0, 50]
-    raise InvalidParameter, 'Wpisz nazwę spółki lub ticker.' if query.empty?
+    raise InvalidParameter, 'Enter a company name or ticker symbol.' if query.empty?
 
     cached("search:#{query.downcase}", 180) do
       local = POPULAR.filter_map do |sym, name, exchange|
@@ -64,7 +62,7 @@ class MarketData
       remote = begin
         twelve_key? ? search_twelve(query) : search_yahoo(query)
       rescue UpstreamError
-        []
+        [] # The input remains usable for direct ticker lookup.
       end
       (local + remote).uniq { |item| item[:symbol] }.first(12)
     end
@@ -73,15 +71,18 @@ class MarketData
   def history(symbol, period)
     symbol = symbol.to_s.strip.upcase
     unless symbol.match?(/\A[A-Z0-9.^=\-]{1,20}\z/)
-      raise InvalidParameter, 'Nieprawidłowy symbol giełdowy.'
+      raise InvalidParameter, 'Invalid ticker symbol.'
     end
-    raise InvalidParameter, 'Nieobsługiwany zakres czasu.' unless PERIODS.key?(period)
+    raise InvalidParameter, 'Unsupported time range.' unless PERIODS.key?(period)
 
     cached("history:#{symbol}:#{period}", period == '1y' ? 300 : 75) do
+
+
       if twelve_key?
         begin
           history_twelve(symbol, period)
         rescue UpstreamError
+
           history_yahoo(symbol, period)
         end
       else
@@ -118,11 +119,11 @@ class MarketData
     req['User-Agent'] = 'Mozilla/5.0 (compatible; StudentStockDashboard/1.0)'
     req['Accept'] = 'application/json'
     response = http.request(req)
-    raise UpstreamError, "Błąd dostawcy danych (HTTP #{response.code})." unless response.is_a?(Net::HTTPSuccess)
+    raise UpstreamError, "Data provider error (HTTP #{response.code})." unless response.is_a?(Net::HTTPSuccess)
 
     JSON.parse(response.body)
   rescue JSON::ParserError, Timeout::Error, SocketError, EOFError, Errno::ECONNRESET, IOError => e
-    raise UpstreamError, "Nie można pobrać danych giełdowych: #{e.class}."
+    raise UpstreamError, "Unable to retrieve market data: #{e.class}."
   end
 
   def search_yahoo(query)
@@ -155,7 +156,7 @@ class MarketData
                       { range: config[:yahoo_range], interval: config[:yahoo_interval],
                         includePrePost: 'false', events: 'history' })
     record = data.dig('chart', 'result', 0)
-    raise UpstreamError, 'Brak notowań dla wskazanej spółki.' unless record
+    raise UpstreamError, 'No market data found for this stock.' unless record
 
     meta = record.fetch('meta', {})
     quote = record.dig('indicators', 'quote', 0) || {}
@@ -185,7 +186,7 @@ class MarketData
                         outputsize: config[:twelve_size], timezone: 'UTC',
                         apikey: ENV.fetch('TWELVE_DATA_API_KEY')
                       })
-    raise UpstreamError, 'Brak notowań u dostawcy.' unless data['status'] != 'error' && data['values'].is_a?(Array)
+    raise UpstreamError, 'No market data available from the provider.' unless data['status'] != 'error' && data['values'].is_a?(Array)
 
     bars = data['values'].filter_map do |v|
       raw_time = v['datetime']
@@ -199,12 +200,12 @@ class MarketData
     normalize(symbol, period, bars, meta['name'] || symbol, meta['currency'] || '',
               daily ? 'UTC' : 'UTC', 'Twelve Data', daily: daily)
   rescue ArgumentError
-    raise UpstreamError, 'Niepoprawny format czasu w danych notowań.'
+    raise UpstreamError, 'Invalid timestamp format in market data.'
   end
 
   def normalize(symbol, period, bars, name, currency, timezone, source, daily:)
     bars = bars.sort_by { |b| b[:time] }.uniq { |b| b[:time] }
-    raise UpstreamError, 'Brak danych dla tego zakresu czasu.' if bars.empty?
+    raise UpstreamError, 'No data available for this time range.' if bars.empty?
 
     first = bars.first[:close]
     last = bars.last[:close]
